@@ -1,0 +1,19 @@
+package com.ml.experimentsandtests.kotlincodeandutils
+
+val keystoreFile = project.rootProject.file("spdb.properties")
+val properties = Properties()
+properties.load(keystoreFile.inputStream())
+
+//return empty key in case something goes wrong
+val URL_SPDB = properties.getProperty("URL_SPDB") ?: ""
+val A_SPDB = properties.getProperty("A_SPDB") ?: ""
+buildConfigField(
+type = "String",
+name = "URL_SPDB",
+value = URL_SPDB
+)
+buildConfigField(
+type = "String",
+name = "A_SPDB",
+value = A_SPDB
+)
