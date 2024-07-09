@@ -16,7 +16,6 @@
     }
   ],
   "platformAutomerge": true,
-  "logLevel": "debug",
   "rebaseWhen": "conflicted",
   "requiredStatusChecks": null
 }
