@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OPFS Worker Image Demo</title>
+</head>
+<body>
+    <button onclick="handleImageSave()">Save Image to OPFS</button>
+    <button onclick="handleImageLoad()">Load Image from OPFS</button>
+    <div id="image-container"></div>
+
+    <script>
+        const worker = new Worker('worker.js');
+        const FILE_ID = 'stored-image';
+        let currentExtension = '';
+
+        worker.onmessage = (e) => {
+            const { action } = e.data;
+            switch (action) {
+                case 'encoded':
+                    console.log('File saved to OPFS:', e.data);
+                    break;
+                case 'decoded':
+                    handleDecodedImage(e.data);
+                    break;
+                case 'error':
+                    console.error('Worker error:', e.data);
+                    break;
+            }
+        };
+
+        async function handleImageSave() {
+            try {
+                const [fileHandle] = await window.showOpenFilePicker({
+                    types: [{
+                        description: 'Images',
+                        accept: {'image/*': ['.png', '.jpg', '.jpeg', '.gif']}
+                    }]
+                });
+                
+                const file = await fileHandle.getFile();
+                currentExtension = file.name.split('.').pop();
+                const buffer = await file.arrayBuffer();
+                
+                worker.postMessage({
+                    action: 'encode',
+                    id: FILE_ID,
+                    data: new Uint8Array(buffer),
+                    extension: currentExtension
+                }, [buffer]);
+                
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    console.error('File selection error:', error);
+                }
+            }
+        }
+
+        function handleImageLoad() {
+            worker.postMessage({
+                action: 'decode',
+                id: FILE_ID,
+                extension: currentExtension
+            });
+        }
+
+        function handleDecodedImage({ data, extension }) {
+            const container = document.getElementById('image-container');
+            container.innerHTML = '';
+            
+            const blob = new Blob([data], { type: getMimeType(extension) });
+            const url = URL.createObjectURL(blob);
+            
+            const img = new Image();
+            img.src = url;
+            img.alt = 'OPFS Image';
+            img.style.maxWidth = '100%';
+            
+            img.onload = () => URL.revokeObjectURL(url);
+            container.appendChild(img);
+        }
+
+        function getMimeType(extension) {
+            return {
+                'png': 'image/png',
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'gif': 'image/gif'
+            }[extension.toLowerCase()] || 'application/octet-stream';
+        }
+    </script>
+</body>
+</html>
